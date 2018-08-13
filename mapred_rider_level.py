@@ -39,11 +39,11 @@ class MyReducer(pymr.Reducer):
 
     def mon_level(self, last_score, scores):
         this_score = sum([x[0] * x[1] for x in zip(scores, self.score)])
-        total_score = last_score + this_socore
-        this_level = score2level(total_score)
+        total_score = last_score + this_score
+        this_level = self.score2level(total_score)
         if self.keep_th[this_level] > scores[0]:
             total_score *= self.decay_rate[this_level]
-            this_level = score2level(total_score)
+            this_level = self.score2level(total_score)
         return total_score, this_level
 
     def _reduce(self, key, values):
@@ -54,12 +54,14 @@ class MyReducer(pymr.Reducer):
             mon = flds[0]
             data[month_diff(self.min_mon, mon)] = map(float, flds[1:])
         output = []
-        score = 0.0
-        level = 0
+        last_score = 0.0
         for scores in data:
-            score, level = mon_level(score, scores)
+            score, level = self.mon_level(last_score, scores)
             output.append((score, level))
-        print(cid, rid, *[':'.join(map(str, x)) for x in output], sep='\t')
+            last_score = score
+        print(cid, rid,
+              '\t'.join([str(x[0]) for x in output]),
+              '\t'.join([str(x[1]) for x in output]), sep='\t')
 
 if __name__ == '__main__':
     if sys.argv[1] == 'm':
